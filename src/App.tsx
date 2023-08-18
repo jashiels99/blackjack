@@ -6,7 +6,7 @@ import Chip from './components/Chip.tsx';
 import Label from './components/Label.tsx';
 import Button from './components/Button.tsx';
 
-type Points = {
+export type Points = {
     soft?: number;
     hard: number;
 };
@@ -230,10 +230,10 @@ function App() {
             if (playerBestValue > dealerBestValue) {
                 setGameState(GameState.PlayerWon);
                 return alert('You won');
-            } else {
-                setGameState(GameState.DealerWon);
-                return alert('Dealer won');
             }
+
+            setGameState(GameState.DealerWon);
+            return alert('Dealer won');
         }
     }, [playerHand, dealerHand]);
 
@@ -246,12 +246,12 @@ function App() {
                 </Label>
             </div>
             <div className="flex flex-col justify-around grow">
-                <Hand>
+                <Hand points={dealerPoints}>
                     {dealerHand.map((card, index) => (
                         <Card value={card} key={index} />
                     ))}
                 </Hand>
-                <Hand>
+                <Hand points={playerPoints}>
                     {playerHand.map((card, index) => (
                         <Card value={card} key={index} />
                     ))}
