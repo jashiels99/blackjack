@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import Card from './components/Card.tsx';
 import Hand from './components/Hand.tsx';
 import Chip from './components/Chip.tsx';
 import Label from './components/Label.tsx';
 import Button from './components/Button.tsx';
+import PlayerBust from './components/Modals/PlayerBust.tsx';
+import DealerBust from './components/Modals/DealerBust.tsx';
+import Push from './components/Modals/Push.tsx';
+import PlayerWon from './components/Modals/PlayerWon.tsx';
+import DealerWon from './components/Modals/DealerWon.tsx';
 
 export type Points = {
     soft?: number;
@@ -23,7 +28,7 @@ enum GameState {
     Push,
 }
 
-const defaultDeck: string[] = [
+const defaultDeck = (): string[] => [
     'AH',
     '2H',
     '3H',
@@ -80,7 +85,7 @@ const defaultDeck: string[] = [
 
 function App() {
     const [balance, setBalance] = useState<number>(1000);
-    const [deck, setDeck] = useState<string[]>(defaultDeck);
+    const deck = useRef<string[]>(defaultDeck());
     const [dealerHand, setDealerHand] = useState<(string | null)[]>([]);
     const [playerHand, setPlayerHand] = useState<string[]>([]);
     const [currentBet, setCurrentBet] = useState<number>(0);
@@ -145,18 +150,15 @@ function App() {
     }
 
     function takeCardsFromDeck(amount: number): string[] {
-        const deckCopy = [...deck];
         const cards = [];
 
         for (let i = 0; i < amount; i++) {
-            const index = Math.floor(Math.random() * deckCopy.length);
-            const card = deckCopy[index];
+            const index = Math.floor(Math.random() * deck.current.length);
+            const card = deck.current[index];
             cards.push(card);
-            deckCopy.splice(deckCopy.indexOf(card), 1);
+            deck.current.splice(deck.current.indexOf(card), 1);
         }
 
-        // Remove cards from deck state
-        setDeck(deckCopy);
         return cards;
     }
 
@@ -199,6 +201,28 @@ function App() {
         }, 1000);
     }
 
+    function resetGame(): void {
+        deck.current = defaultDeck();
+        setPlayerHand([]);
+        setDealerHand([]);
+        setCurrentBet(0);
+        setGameState(GameState.Betting);
+    }
+
+    function lost(): void {
+        resetGame();
+    }
+
+    function won(): void {
+        setBalance((previous) => previous + currentBet * 2);
+        resetGame();
+    }
+
+    function push(): void {
+        setBalance((previous) => previous + currentBet);
+        resetGame();
+    }
+
     useEffect(() => {
         if (gameState === GameState.Dealing) {
             if (playerBestValue === 21) {
@@ -208,7 +232,7 @@ function App() {
 
             if (playerBestValue > 21) {
                 setGameState(GameState.PlayerBust);
-                return alert('You went bust');
+                return;
             }
 
             setGameState(GameState.PlayerDeciding);
@@ -219,22 +243,22 @@ function App() {
 
             if (dealerBestValue > 21) {
                 setGameState(GameState.DealerBust);
-                return alert('Dealer went bust');
+                return;
             }
 
             if (dealerBestValue === playerBestValue) {
                 setGameState(GameState.Push);
-                return alert('Push');
+                return;
             }
 
             if (playerBestValue > dealerBestValue) {
                 setGameState(GameState.PlayerWon);
-                return alert('You won');
+                return;
             }
 
             setGameState(GameState.DealerWon);
-            return alert('Dealer won');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [playerHand, dealerHand]);
 
     return (
@@ -267,7 +291,10 @@ function App() {
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="flex gap-2">
-                        <Button onClick={dealFirstCards} disabled={!canDeal}>
+                        <Button
+                            onClick={dealFirstCards}
+                            disabled={!canDeal || currentBet === 0}
+                        >
                             Deal
                         </Button>
                         <Button onClick={stand} disabled={!canStandOrHit}>
@@ -285,6 +312,23 @@ function App() {
                     </Label>
                 </div>
             </div>
+            <PlayerBust
+                isOpen={gameState === GameState.PlayerBust}
+                onClose={lost}
+            />
+            <DealerBust
+                isOpen={gameState === GameState.DealerBust}
+                onClose={won}
+            />
+            <Push isOpen={gameState === GameState.Push} onClose={push} />
+            <PlayerWon
+                isOpen={gameState === GameState.PlayerWon}
+                onClose={won}
+            />
+            <DealerWon
+                isOpen={gameState === GameState.DealerWon}
+                onClose={won}
+            />
         </main>
     );
 }
