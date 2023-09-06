@@ -327,7 +327,7 @@ function App() {
             />
             <DealerWon
                 isOpen={gameState === GameState.DealerWon}
-                onClose={won}
+                onClose={lost}
             />
         </main>
     );
