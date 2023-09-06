@@ -140,7 +140,7 @@ function App() {
     }
 
     function bet(amount: number): void {
-        if (gameState !== GameState.Betting) return;
+        if (gameState !== GameState.Betting || balance < amount) return;
         setCurrentBet((previous) => previous + amount);
     }
 
@@ -293,7 +293,11 @@ function App() {
                     <div className="flex gap-2">
                         <Button
                             onClick={dealFirstCards}
-                            disabled={!canDeal || currentBet === 0}
+                            disabled={
+                                !canDeal ||
+                                currentBet === 0 ||
+                                currentBet > balance
+                            }
                         >
                             Deal
                         </Button>
